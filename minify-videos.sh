@@ -2,7 +2,7 @@
 
 ###
 # PARAMETERS:
-#  resulotion: i.e.: 900x or 1920x1080
+#  resolution: i.e.: 900x or 1920x1080
 #  source_dir: directory where pictures are located
 #  target_dir: directory, where minified pictures are supposed to be located
 ###
@@ -14,6 +14,19 @@ sourcedir=$2
 targetdir=$3
 vbitrate="4000k"
 abitrate="192k"
+
+# verify if is running
+pidfile=/tmp/minify-videos.pid
+if [ -e $pidfile ]; then
+  pid=`cat $pidfile`
+  if kill -0 &>1 > /dev/null $pid; then
+    echo "Already running"
+    exit 1
+  else
+    rm $pidfile
+  fi
+fi
+echo $$ > $pidfile
 
 if [ ! $# -eq 3 ]
 then
@@ -48,7 +61,7 @@ do
         fi
         echo "converting $i"
 
-        if [ ! -f "$targetdir/$i" ]
+        if [ ! -f "$targetdir/$i.avi" ]
         then
 		echo avconv -i "$i" -vcodec libxvid -b $vbitrate -acodec libmp3lame -ac 2 -b:a $abitrate -deinterlace -s $targetres "$targetdir/$i.avi"
 		avconv -i "$i" -vcodec libxvid -b $vbitrate -acodec libmp3lame -ac 2 -b:a $abitrate -deinterlace -s $targetres "$targetdir/$i.avi"
