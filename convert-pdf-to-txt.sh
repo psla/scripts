@@ -9,6 +9,7 @@ OUTPUT_DIR=/mnt/nas/public/wspolne/Skany/done
 inotifywait -m -e create --format '%w%f' "${INCOMING_DIR}" | while read NEWFILE
 do
   echo "File '${NEWFILE}' was created"
+  sleep 1
   # Tif allows multi-page data, though it is BIG
   convert -density 300 "${NEWFILE}" $TMP_DIR/input.tif
   RENAMED=`date +'%Y-%m-%d_%H_%M'`_scan.pdf
