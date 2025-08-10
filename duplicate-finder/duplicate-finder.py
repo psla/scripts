@@ -7,27 +7,34 @@ import sys
 def calculate_hash(filepath, block_size=65536):
     """Calculates the SHA1 hash of a file."""
     sha1 = hashlib.sha1()
-    with open(filepath, 'rb') as f:
-        while True:
-            data = f.read(block_size)
-            if not data:
-                break
-            sha1.update(data)
-    return sha1.hexdigest()
+    try:
+        with open(filepath, 'rb') as f:
+            while True:
+                data = f.read(block_size)
+                if not data:
+                    break
+                sha1.update(data)
+        return sha1.hexdigest()
+    except IOError:
+        return None
 
 def create_hash_file(folder_paths, output_json):
     """
     Creates a JSON file with hashes for all files in the specified folders.
+    The filename (basename) is used as the key. It warns if duplicate filenames are found.
     """
     file_hashes = {}
     for folder_path in folder_paths:
         for dirpath, _, filenames in os.walk(folder_path):
             for filename in filenames:
                 full_path = os.path.join(dirpath, filename)
-                try:
-                    file_hashes[full_path] = calculate_hash(full_path)
-                except IOError as e:
-                    print(f"Warning: Could not read file {full_path}. Skipping. Error: {e}", file=sys.stderr)
+                if filename in file_hashes:
+                    print(f"Warning: Duplicate filename '{filename}' found. Skipping.", file=sys.stderr)
+                    continue
+                
+                file_hash = calculate_hash(full_path)
+                if file_hash:
+                    file_hashes[filename] = file_hash
     
     with open(output_json, 'w') as f:
         json.dump(file_hashes, f, indent=4)
@@ -35,7 +42,7 @@ def create_hash_file(folder_paths, output_json):
 
 def check_hashes(folder_paths, input_json):
     """
-    Checks the hashes of files against a given JSON file.
+    Checks the hashes of files against a given JSON file, matching by filename.
     """
     try:
         with open(input_json, 'r') as f:
@@ -50,16 +57,18 @@ def check_hashes(folder_paths, input_json):
     for folder_path in folder_paths:
         for dirpath, _, filenames in os.walk(folder_path):
             for filename in filenames:
-                full_path = os.path.join(dirpath, filename)
-                if full_path in reference_hashes:
-                    try:
-                        current_hash = calculate_hash(full_path)
-                        if current_hash == reference_hashes[full_path]:
-                            print(full_path)
-                        else:
-                            print(f"Warning: Hash mismatch for file {full_path}", file=sys.stderr)
-                    except IOError as e:
-                        print(f"Warning: Could not read file {full_path}. Skipping. Error: {e}", file=sys.stderr)
+                if filename in reference_hashes:
+                    full_path = os.path.join(dirpath, filename)
+                    current_hash = calculate_hash(full_path)
+                    
+                    if current_hash is None:
+                        print(f"Warning: Could not read file {full_path}. Skipping hash check.", file=sys.stderr)
+                        continue
+                    
+                    if current_hash == reference_hashes[filename]:
+                        print(full_path)
+                    else:
+                        print(f"Warning: Hash mismatch for file {full_path}", file=sys.stderr)
     
 def main():
     parser = argparse.ArgumentParser(description="Calculate or check file hashes.")

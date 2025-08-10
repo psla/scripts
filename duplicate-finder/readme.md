@@ -19,3 +19,6 @@ If the hash matches, the full path of the matching file is printed to stdout. Ea
 
 
 
+When matching the hashes with existing filenames in json, use the filename, not the full path.
+
+When creating a file_hashes collection (create hash file), please verify that two identical filenames are not being added
