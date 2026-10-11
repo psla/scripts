@@ -1,0 +1,38 @@
+name: CI
+
+enable-email-notifications: true
+
+on:
+  push:
+    branches: ["*"]
+  pull_request:
+
+jobs:
+  test:
+    name: Lint & Validate Scripts
+    runs-on: kvm
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends shellcheck python3
+
+      - name: Syntax check bash scripts
+        run: |
+          for f in *.sh; do
+            if [ -f "$f" ]; then
+              bash -n "$f"
+            fi
+          done
+
+      - name: Verify Python scripts
+        run: |
+          python3 -m py_compile duplicate-finder/duplicate-finder.py
+
+      - name: Lint shell scripts with ShellCheck
+        run: |
+          shellcheck -S error *.sh || true
